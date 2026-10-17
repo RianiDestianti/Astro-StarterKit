@@ -1,0 +1,64 @@
+---
+import AppLayout from "@/layouts/AppLayout.astro";
+---
+<AppLayout title="Home">
+    <div class="page">
+        <div class="card profile">
+            <img class="avatar" id="avatar" alt="avatar" hidden />
+            <h2 id="name">-</h2>
+            <p class="muted" id="email">-</p>
+            <div class="badges">
+                <span class="badge" id="role">-</span>
+                <span class="badge" id="verified">-</span>
+            </div>
+        </div>
+
+        <a class="button" id="manage-users" href="/users" hidden>Manage Users</a>
+        <button class="button outline" id="logout">Logout</button>
+    </div>
+</AppLayout>
+
+<script>
+    import { store } from "@/store/store";
+    import { getProfile } from "@/store/controllers/auth.controller";
+    import { handleLogout } from "@/store/slices/authSlice";
+    import { setLoading } from "@/libs/general";
+    import { getToken, removeToken } from "@/libs/storage";
+
+    if (!getToken()) location.replace("/sign-in")
+
+    const logout = () => {
+        removeToken()
+        store.dispatch(handleLogout())
+        location.href = "/sign-in"
+    }
+
+    document.getElementById("logout")?.addEventListener("click", logout)
+
+    store.select((state) => state.auth, (stateAuth) => {
+        setLoading(stateAuth.loading)
+
+        if (stateAuth.errorCode == 401 || stateAuth.errorCode == 403) {
+            logout()
+            return
+        }
+
+        const profile   = stateAuth.profile
+        const avatar    = document.getElementById("avatar") as HTMLImageElement
+        const verified  = document.getElementById("verified") as HTMLElement
+
+        avatar.hidden = !profile?.avatar
+        if (profile?.avatar) avatar.src = profile.avatar
+
+        document.getElementById("name")!.textContent  = profile?.name ?? "-"
+        document.getElementById("email")!.textContent = profile?.email ?? "-"
+        document.getElementById("role")!.textContent  = profile?.role ?? "-"
+        verified.textContent = profile?.verified ? "verified" : "not verified"
+        verified.classList.toggle("success", !!profile?.verified)
+        verified.classList.toggle("danger", !profile?.verified)
+
+        document.getElementById("manage-users")!.hidden = profile?.role !== "admin"
+    })
+
+    store.dispatch(getProfile())
+</script>

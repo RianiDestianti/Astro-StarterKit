@@ -1,0 +1,22 @@
+---
+import Loading from "@/components/Loading.astro";
+import "@/styles.css";
+
+interface Props {
+    title: string
+}
+
+const { title } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{title} | Astro Skeleton</title>
+    </head>
+    <body>
+        <Loading />
+        <slot />
+    </body>
+</html>

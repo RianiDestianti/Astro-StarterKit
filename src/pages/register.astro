@@ -1,0 +1,66 @@
+---
+import AppLayout from "@/layouts/AppLayout.astro";
+
+const fields = [
+    { name: "name",     label: "Name",     type: "text",     placeholder: "Enter name" },
+    { name: "email",    label: "Email",    type: "email",    placeholder: "Enter email" },
+    { name: "password", label: "Password", type: "password", placeholder: "Minimum 6 characters" },
+] as const
+---
+<AppLayout title="Register">
+    <div class="page-center">
+        <div class="card auth-card">
+            <h2 class="title">Create Account</h2>
+
+            <div class="alert" id="alert" hidden></div>
+
+            {fields.map((field) => (
+                <div class="field">
+                    <label>{field.label}<span class="required">*</span></label>
+                    <input name={field.name} type={field.type} placeholder={field.placeholder} />
+                    <small class="field-error" data-error={field.name} hidden></small>
+                </div>
+            ))}
+
+            <button class="button" id="register">REGISTER</button>
+            <a class="button outline" href="/sign-in">Back to sign in</a>
+        </div>
+    </div>
+</AppLayout>
+
+<script>
+    import { store } from "@/store/store";
+    import { handleActionRegister } from "@/store/controllers/auth.controller";
+    import { handleCleanResponse } from "@/store/slices/authSlice";
+    import { firstError, handleChangeInput, setLoading, setText } from "@/libs/general";
+    import { getToken, setToken } from "@/libs/storage";
+    import type { RegisterRequest } from "@/store/types/AuthType";
+
+    if (getToken()) location.replace("/home")
+
+    const request: RegisterRequest = {
+        name        : "",
+        email       : "",
+        password    : ""
+    }
+
+    document.querySelectorAll("input").forEach((input) => input.addEventListener("input", (event) => handleChangeInput(event, request)))
+    document.getElementById("register")?.addEventListener("click", () => store.dispatch(handleActionRegister(request)))
+
+    store.dispatch(handleCleanResponse())
+
+    store.select((state) => state.auth, (stateRegister) => {
+        setLoading(stateRegister.loading)
+        setText("#alert", stateRegister.error ?? "")
+
+        for (const field of ["name", "email", "password"]) {
+            setText(`[data-error=${field}]`, firstError(stateRegister.errorFields, field))
+        }
+
+        if (stateRegister.responseRegister) {
+            setToken(stateRegister.responseRegister.key)
+            store.dispatch(handleCleanResponse())
+            location.href = "/home"
+        }
+    })
+</script>

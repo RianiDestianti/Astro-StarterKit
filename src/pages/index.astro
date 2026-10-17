@@ -1,0 +1,12 @@
+---
+import AppLayout from "@/layouts/AppLayout.astro";
+---
+<AppLayout title="Loading">
+</AppLayout>
+
+<script>
+    import { getToken } from "@/libs/storage";
+
+    // Cek token: sudah login -> home, belum -> sign-in.
+    location.replace(getToken() ? "/home" : "/sign-in")
+</script>

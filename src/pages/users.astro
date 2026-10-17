@@ -1,0 +1,101 @@
+---
+import AppLayout from "@/layouts/AppLayout.astro";
+---
+<AppLayout title="Users">
+    <div class="page">
+        <div class="header">
+            <a class="button outline small" href="/home">Back</a>
+            <h2 id="title">Users (0)</h2>
+        </div>
+
+        <input class="search" placeholder="Search name, email, phone" />
+
+        <div class="alert" id="alert" hidden></div>
+
+        <div id="list"></div>
+        <p class="muted center" id="empty" hidden>No data</p>
+
+        <div class="pagination">
+            <button class="button outline small" id="previous">Previous</button>
+            <span id="page-text">1 / 1</span>
+            <button class="button outline small" id="next">Next</button>
+        </div>
+    </div>
+</AppLayout>
+
+<script>
+    import { store } from "@/store/store";
+    import { deleteUser, getListUser } from "@/store/controllers/user.controller";
+    import { resetResponse } from "@/store/slices/userSlice";
+    import { setLoading, setText } from "@/libs/general";
+    import { getToken } from "@/libs/storage";
+    import type { User } from "@/store/types/UserType";
+
+    if (!getToken()) location.replace("/sign-in")
+
+    const search    = document.querySelector<HTMLInputElement>("input.search")!
+    const list      = document.getElementById("list")!
+    const previous  = document.getElementById("previous") as HTMLButtonElement
+    const next      = document.getElementById("next") as HTMLButtonElement
+    let page        = 1
+
+    const loadData = (targetPage: number) => {
+        store.dispatch(getListUser({ keyword: search.value, page: targetPage }))
+    }
+
+    const handleChangePage = (targetPage: number) => {
+        page = targetPage
+        loadData(targetPage)
+    }
+
+    const handleDeleteData = (user: User) => {
+        if (confirm(`Delete ${user.name}?`)) {
+            store.dispatch(deleteUser(user.id))
+        }
+    }
+
+    const renderRow = (user: User) => {
+        const row = document.createElement("div")
+        row.className = "card row"
+        row.innerHTML = `
+            <div class="row-info">
+                <strong></strong>
+                <small class="muted"></small>
+                <small class="muted"></small>
+            </div>
+            <button class="button danger small">Delete</button>
+        `
+        const [name, email, role] = row.querySelectorAll<HTMLElement>("strong, small")
+        name.textContent  = user.name
+        email.textContent = user.email
+        role.textContent  = user.role
+        row.querySelector("button")!.addEventListener("click", () => handleDeleteData(user))
+        return row
+    }
+
+    search.addEventListener("keyup", (event) => {
+        if (event.key === "Enter") handleChangePage(1)
+    })
+    previous.addEventListener("click", () => handleChangePage(page - 1))
+    next.addEventListener("click", () => handleChangePage(page + 1))
+
+    store.select((state) => state.user, (stateUser) => {
+        setLoading(stateUser.loading)
+        setText("#alert", stateUser.error ?? "")
+
+        document.getElementById("title")!.textContent     = `Users (${stateUser.total.data})`
+        document.getElementById("page-text")!.textContent = `${page} / ${Math.max(stateUser.total.pages, 1)}`
+        document.getElementById("empty")!.hidden          = stateUser.users.length > 0
+        previous.disabled   = page <= 1
+        next.disabled       = page >= stateUser.total.pages
+
+        list.replaceChildren(...stateUser.users.map(renderRow))
+
+        if (stateUser.response.delete) {
+            alert(stateUser.response.delete.message)
+            store.dispatch(resetResponse())
+        }
+    })
+
+    loadData(1)
+</script>

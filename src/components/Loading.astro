@@ -1,0 +1,30 @@
+---
+// Overlay loading. Ditampilkan/disembunyikan lewat setLoading() di libs/general.ts.
+---
+<div id="loading" class="overlay" hidden>
+    <div class="spinner"></div>
+</div>
+
+<style>
+    .overlay {
+        position        : fixed;
+        inset           : 0;
+        display         : flex;
+        align-items     : center;
+        justify-content : center;
+        background      : rgba(0, 0, 0, 0.25);
+        z-index         : 50;
+    }
+    .overlay[hidden] {
+        display         : none;
+    }
+    .spinner {
+        width           : 40px;
+        height          : 40px;
+        border          : 4px solid #e2e8f0;
+        border-top-color: var(--primary);
+        border-radius   : 50%;
+        animation       : spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>

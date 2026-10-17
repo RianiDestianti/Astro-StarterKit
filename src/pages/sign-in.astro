@@ -1,0 +1,68 @@
+---
+import AppLayout from "@/layouts/AppLayout.astro";
+---
+<AppLayout title="Sign In">
+    <div class="page-center">
+        <div class="card auth-card">
+            <div class="brand">
+                <div class="logo">S</div>
+                <span>Skeleton</span>
+            </div>
+
+            <div class="alert" id="alert" hidden></div>
+
+            <div class="field">
+                <label>Email<span class="required">*</span></label>
+                <input name="email" placeholder="Enter email" />
+                <small class="field-error" data-error="email" hidden></small>
+            </div>
+            <div class="field">
+                <label>Password<span class="required">*</span></label>
+                <input name="password" type="password" placeholder="Enter password" />
+                <small class="field-error" data-error="password" hidden></small>
+            </div>
+
+            <button class="button" id="sign-in">SIGN IN</button>
+            <a class="button outline" href="/register">Create an account</a>
+        </div>
+    </div>
+</AppLayout>
+
+<script>
+    import { store } from "@/store/store";
+    import { handleActionLogin } from "@/store/controllers/auth.controller";
+    import { handleCleanResponse } from "@/store/slices/authSlice";
+    import { firstError, handleChangeInput, setLoading, setText } from "@/libs/general";
+    import { getToken, setToken } from "@/libs/storage";
+    import type { LoginRequest } from "@/store/types/AuthType";
+
+    if (getToken()) location.replace("/home")
+
+    const request: LoginRequest = {
+        email       : "",
+        password    : ""
+    }
+
+    const handleLogin = () => store.dispatch(handleActionLogin(request))
+
+    document.querySelectorAll("input").forEach((input) => input.addEventListener("input", (event) => handleChangeInput(event, request)))
+    document.getElementById("sign-in")?.addEventListener("click", handleLogin)
+    document.querySelector("input[name=password]")?.addEventListener("keyup", (event) => {
+        if ((event as KeyboardEvent).key === "Enter") handleLogin()
+    })
+
+    store.dispatch(handleCleanResponse())
+
+    store.select((state) => state.auth, (stateLogin) => {
+        setLoading(stateLogin.loading)
+        setText("#alert", stateLogin.error ?? "")
+        setText("[data-error=email]", firstError(stateLogin.errorFields, "email"))
+        setText("[data-error=password]", firstError(stateLogin.errorFields, "password"))
+
+        if (stateLogin.responseLogin) {
+            setToken(stateLogin.responseLogin.key)
+            store.dispatch(handleCleanResponse())
+            location.href = "/home"
+        }
+    })
+</script>
